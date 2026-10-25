@@ -33,6 +33,7 @@ export default function MarketMap({
   const markers = useRef<maplibregl.Marker[]>([])
   const [ready, setReady] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
+  const [basemapUnavailable, setBasemapUnavailable] = useState(false)
   const callbacks = useRef({ onSelect, onCity })
   useEffect(() => {
     callbacks.current = { onSelect, onCity }
@@ -40,6 +41,7 @@ export default function MarketMap({
 
   useEffect(() => {
     if (!container.current) return
+    const controller = new AbortController()
     let map: maplibregl.Map
     try {
       map = new maplibregl.Map({
@@ -52,24 +54,13 @@ export default function MarketMap({
         minZoom: 8,
         maxZoom: 16,
         attributionControl: { compact: true },
+        // Keep a renderable local style while the remote basemap loads. This
+        // also lets camera animations and price markers work during an outage.
         style: {
           version: 8,
-          sources: {
-            basemap: {
-              type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution:
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            },
-          },
+          sources: {},
           layers: [
-            {
-              id: 'basemap',
-              type: 'raster',
-              source: 'basemap',
-              paint: { 'raster-saturation': -0.75, 'raster-opacity': 0.78 },
-            },
+            { id: 'background', type: 'background', paint: { 'background-color': '#eef2ea' } },
           ],
         },
       })
@@ -83,9 +74,23 @@ export default function MarketMap({
       map.on('error', (event) => {
         if (event.error?.message?.includes('WebGL')) setUnavailable(true)
       })
+      async function loadBasemap() {
+        try {
+          const response = await fetch('https://tiles.openfreemap.org/styles/positron', {
+            signal: controller.signal,
+          })
+          if (!response.ok) throw new Error(`Basemap request failed: ${response.status}`)
+          const style = await response.json()
+          if (mapRef.current === map && !controller.signal.aborted) map.setStyle(style)
+        } catch {
+          if (!controller.signal.aborted) setBasemapUnavailable(true)
+        }
+      }
+      void loadBasemap()
       const resize = new ResizeObserver(() => map.resize())
       resize.observe(container.current)
       return () => {
+        controller.abort()
         resize.disconnect()
         markers.current.forEach((m) => m.remove())
         markers.current = []
@@ -186,6 +191,11 @@ export default function MarketMap({
           <MapPin size={30} />
           <strong>Map unavailable on this device</strong>
           <span>Every neighborhood is still available in the list and charts.</span>
+        </div>
+      )}
+      {basemapUnavailable && !unavailable && (
+        <div className="basemap-notice" role="status">
+          Background map unavailable. Price markers still work.
         </div>
       )}
       {city && mapped === 0 && !unavailable && (

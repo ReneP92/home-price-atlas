@@ -1,4 +1,4 @@
-name: Check and deploy
+name: Check
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pages-${{ github.ref }}
+  group: checks-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -39,29 +39,8 @@ jobs:
       - run: google-chrome --version
       - run: bun run test:e2e
       - run: bun run build
-        env:
-          BASE_PATH: /home-price-atlas/
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-results
           path: test-results/
-      - uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        with:
-          path: dist
-
-  deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: check
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4

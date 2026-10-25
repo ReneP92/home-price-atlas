@@ -2,7 +2,7 @@
 
 A neighborhood-level home-price explorer, starting with California's Peninsula and western South Bay. Compare single-family homes, condos/co-ops, and townhomes using free public housing data.
 
-**[Explore the app](https://renep92.github.io/home-price-atlas/)**
+**Run locally:** http://127.0.0.1:5173
 
 ## What it does
 
@@ -13,7 +13,7 @@ A neighborhood-level home-price explorer, starting with California's Peninsula a
 - Search, filter by city, sort by change, and identify limited-data areas.
 - Save neighborhoods on your device, share filtered URLs, and export the underlying comparison as CSV.
 - Show city-level changes on the map overview and approximate neighborhood reference locations after selecting a city.
-- Run as a static site, with no paid data subscription, backend, account, or API key.
+- Run locally, with no paid data subscription, backend, account, or API key.
 
 ## Run locally
 
@@ -70,7 +70,9 @@ The overview shows **city-level** metrics at approximate city centers defined in
 
 Neighborhood points come from the **[EPA-hosted Zillow 2017 neighborhood dataset](https://www.arcgis.com/home/item.html?id=56b89613f9f7450fb44e857691a244e7)**. A unique, exact normalized city and neighborhood-name match is required. These points are **approximate locators, not Redfin neighborhood boundaries**. Metrics are joined by Redfin region IDs, never by spatial proximity. Unmatched neighborhoods remain available in the list, charts, and export.
 
-Reference locations are credited to Zillow and the US EPA. Background map tiles are provided by OpenStreetMap and are loaded only for the visible map, with attribution. Location matching can fail independently of price imports without dropping the underlying price history.
+Reference locations are credited to Zillow and the US EPA. The basemap is **[OpenFreeMap Positron](https://openfreemap.org/quick_start/)**: a light vector style with sharp labels, streets, and building footprints as you zoom. Its subdued palette keeps the price overlays readable. The public service requires no registration, API key, or subscription and supports commercial use and US-wide coverage.
+
+MapLibre loads the provider's attribution automatically: OpenFreeMap, OpenMapTiles, and OpenStreetMap. Maps load over the internet while the app runs on localhost. Map location coverage is independent of the basemap provider; changing providers does not create missing neighborhood coordinates or price data.
 
 ### Source files
 
@@ -105,7 +107,7 @@ python3 scripts/refresh.py \
 
 Local files must contain the same dimension and metric columns as the public property-type exports. This intentionally rejects incomplete or differently shaped exports instead of guessing category or period information.
 
-Outputs in `public/data/` are generated. Regenerate them with the importer rather than editing them manually. A monthly GitHub Actions workflow imports and validates a new snapshot, commits it, and explicitly starts the full CI/deployment workflow. It can also be triggered manually from the Actions tab. The live site updates only after those checks pass.
+Outputs in `public/data/` are generated. Regenerate them with the importer rather than editing them manually. A monthly GitHub Actions workflow imports and validates a new snapshot, commits it, and runs the repository checks. It can also be triggered manually from the Actions tab. Pull the latest changes to use the updated snapshot locally.
 
 ## Adding another US region
 
@@ -128,21 +130,21 @@ src/lib/market.ts        Period matching, sample rules, changes, formatting, exp
 src/components/         MapLibre map and Recharts comparison chart
 src/App.tsx             Search, filters, URL state, saved neighborhoods, data loading
 e2e/                    Desktop and mobile user journeys
-.github/workflows/       CI, GitHub Pages deployment, and monthly refresh
+.github/workflows/       Repository checks and monthly data refresh
 ```
 
 The frontend loads one selected regional snapshot. The data model preserves provider IDs, geographic level, source dates, observation windows, and original property categories. A future property-level provider can be added without making the current aggregate statistics pretend to be individual-home valuations.
 
-## Deployment
+## Local production build
 
-GitHub Actions runs lint, unit tests, importer tests, and desktop/mobile E2E tests before publishing to GitHub Pages. Set the repository's Pages source to **GitHub Actions**.
-
-For a different deployment path, set `BASE_PATH` at build time. Root-domain deployment uses `/` by default.
+Build and preview the optimized app locally:
 
 ```sh
-BASE_PATH=/home-price-atlas/ bun run build
-BASE_PATH=/home-price-atlas/ bun run preview
+bun run build
+bun run preview
 ```
+
+Open http://127.0.0.1:4173. Both development and preview servers bind to localhost. GitHub Actions runs validation and build checks only; public hosting and deployment are disabled.
 
 ## License and attribution
 

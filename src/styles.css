@@ -735,6 +735,21 @@ h1 > span {
   border-radius: 50%;
   margin: 0 1px;
 }
+.basemap-notice {
+  position: absolute;
+  top: 62px;
+  left: 17px;
+  max-width: calc(100% - 76px);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffffff2;
+  color: #65765d;
+  font-size: 10px;
+  line-height: 1.6;
+  pointer-events: none;
+  z-index: 2;
+}
 .map-controls {
   position: absolute;
   right: 15px;

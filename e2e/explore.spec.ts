@@ -3,14 +3,17 @@ import { expect, test } from '@playwright/test'
 test.beforeEach(async ({ page }) => {
   // Real committed market data; deterministic external decoration. Live tiles
   // are checked separately during visual review, not on every CI interaction.
-  await page.route('https://tile.openstreetmap.org/**', (route) =>
+  await page.route('https://tiles.openfreemap.org/styles/positron', (route) =>
     route.fulfill({
-      contentType: 'image/png',
+      contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },
-      body: Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAACwElEQVR4nO3TMQ0AMAzAsPKHumPHEAxGj1gygDyZ+w5kzXoBLDIAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANIMQJoBSDMAaQYgzQCkGYA0A5BmANI+myAp18If8O4AAAAASUVORK5CYII=',
-        'base64',
-      ),
+      body: JSON.stringify({
+        version: 8,
+        sources: {},
+        layers: [
+          { id: 'background', type: 'background', paint: { 'background-color': '#eef2ea' } },
+        ],
+      }),
     }),
   )
   await page.route('https://fonts.googleapis.com/**', (route) =>
@@ -36,11 +39,14 @@ test('renders a visible map and drills from city markers into neighborhoods', as
 test('keeps price markers interactive when the external basemap is unavailable', async ({
   page,
 }) => {
-  await page.route('https://tile.openstreetmap.org/**', (route) => route.abort())
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.abort())
   await page.goto('/')
   await page.getByRole('button', { name: 'Explore Sunnyvale', exact: true }).click()
   await expect(page.getByLabel('Filter by city')).toHaveValue('19457')
   await expect(page.locator('.map-loading')).toHaveCount(0)
+  await expect(
+    page.getByText('Background map unavailable. Price markers still work.'),
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Select Ponderosa', exact: true }).click()
   await expect(page.locator('.section-heading h2')).toContainText('Ponderosa')
 })
