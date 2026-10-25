@@ -5,8 +5,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  workers: process.env.CI ? 2 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
+    channel: process.env.CI ? 'chrome' : undefined,
+    launchOptions: { args: process.env.CI ? ['--enable-unsafe-swiftshader'] : [] },
     baseURL: 'http://127.0.0.1:5173',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

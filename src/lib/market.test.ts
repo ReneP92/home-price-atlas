@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compare, exportRows, median, monthKey, percent } from './market'
+import { compare, csvCell, exportRows, median, monthKey, percent } from './market'
 import type { Observation, Place } from '../types'
 
 function point(date: string, price: number | null, sales: number | null = 10): Observation {
@@ -79,6 +79,8 @@ describe('market comparisons', () => {
     expect(csv).toContain('"Condo/Co-op"')
     expect(csv).toContain('"missing"')
     expect(csv).not.toContain('undefined')
+    expect(csvCell(-12.28)).toBe('"-12.28"')
+    expect(csvCell('-malicious formula')).toBe('"\'-malicious formula"')
   })
   it('calculates an unweighted median and formats flat changes without negative zero', () => {
     expect(median([])).toBeNull()

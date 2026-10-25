@@ -141,6 +141,7 @@ For a different deployment path, set `BASE_PATH` at build time. Root-domain depl
 
 ```sh
 BASE_PATH=/home-price-atlas/ bun run build
+BASE_PATH=/home-price-atlas/ bun run preview
 ```
 
 ## License and attribution

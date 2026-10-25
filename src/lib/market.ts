@@ -128,7 +128,7 @@ export function changeClass(value: number | null): string {
 
 export function csvCell(value: unknown): string {
   const text = value == null ? '' : String(value)
-  const safe = /^[=+@-]/.test(text) ? `'${text}` : text
+  const safe = typeof value === 'string' && /^[=+@-]/.test(text) ? `'${text}` : text
   return `"${safe.replaceAll('"', '""')}"`
 }
 
