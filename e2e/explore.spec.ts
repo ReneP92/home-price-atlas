@@ -33,6 +33,18 @@ test('renders a visible map and drills from city markers into neighborhoods', as
   await expect(page.locator('.section-heading h2')).toContainText('Ponderosa')
 })
 
+test('keeps price markers interactive when the external basemap is unavailable', async ({
+  page,
+}) => {
+  await page.route('https://tile.openstreetmap.org/**', (route) => route.abort())
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Explore Sunnyvale', exact: true }).click()
+  await expect(page.getByLabel('Filter by city')).toHaveValue('19457')
+  await expect(page.locator('.map-loading')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Select Ponderosa', exact: true }).click()
+  await expect(page.locator('.section-heading h2')).toContainText('Ponderosa')
+})
+
 test('explores real data, switches types and restores a shareable filtered view', async ({
   page,
 }) => {

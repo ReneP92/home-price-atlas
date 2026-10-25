@@ -74,7 +74,12 @@ export default function MarketMap({
         },
       })
       mapRef.current = map
-      map.on('load', () => setReady(true))
+      // DOM price markers need the initialized camera, not a completed basemap
+      // download. Waiting for `load` can leave them hidden indefinitely when a
+      // tile fails or is retried. Guard against StrictMode's disposed instance.
+      queueMicrotask(() => {
+        if (mapRef.current === map) setReady(true)
+      })
       map.on('error', (event) => {
         if (event.error?.message?.includes('WebGL')) setUnavailable(true)
       })
