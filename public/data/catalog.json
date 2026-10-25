@@ -1,0 +1,11 @@
+{
+  "defaultRegion": "peninsula-south-bay",
+  "regions": [
+    {
+      "id": "peninsula-south-bay",
+      "name": "Peninsula & South Bay",
+      "description": "Hillsborough to Los Gatos, California",
+      "available": true
+    }
+  ]
+}

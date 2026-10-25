@@ -1,0 +1,8 @@
+node_modules
+dist
+.cache
+public/data
+bun.lock
+*.tsbuildinfo
+playwright-report
+test-results

@@ -1,0 +1,36 @@
+{
+  "defaultRegion": "peninsula-south-bay",
+  "regions": [
+    {
+      "id": "peninsula-south-bay",
+      "name": "Peninsula & South Bay",
+      "description": "Hillsborough to Los Gatos, California",
+      "state": "CA",
+      "bounds": [-122.52, 37.18, -121.85, 37.63],
+      "cities": [
+        { "id": "8642", "name": "Hillsborough", "center": [-122.3794, 37.5741] },
+        { "id": "2350", "name": "Burlingame", "center": [-122.3661, 37.5841] },
+        { "id": "17490", "name": "San Mateo", "center": [-122.3255, 37.563] },
+        { "id": "6524", "name": "Foster City", "center": [-122.2711, 37.5585] },
+        { "id": "1362", "name": "Belmont", "center": [-122.2758, 37.5202] },
+        { "id": "16687", "name": "San Carlos", "center": [-122.2605, 37.5072] },
+        { "id": "15525", "name": "Redwood City", "center": [-122.2364, 37.4852] },
+        { "id": "20966", "name": "Woodside", "center": [-122.2597, 37.4299] },
+        { "id": "820", "name": "Atherton", "center": [-122.2, 37.4613] },
+        { "id": "11961", "name": "Menlo Park", "center": [-122.1817, 37.453] },
+        { "id": "5401", "name": "East Palo Alto", "center": [-122.1416, 37.4688] },
+        { "id": "15117", "name": "Portola Valley", "center": [-122.2352, 37.3841] },
+        { "id": "14325", "name": "Palo Alto", "center": [-122.143, 37.4419] },
+        { "id": "11018", "name": "Los Altos", "center": [-122.1141, 37.3852] },
+        { "id": "11022", "name": "Los Altos Hills", "center": [-122.1444, 37.3797] },
+        { "id": "12739", "name": "Mountain View", "center": [-122.0839, 37.3861] },
+        { "id": "19457", "name": "Sunnyvale", "center": [-122.0363, 37.3688] },
+        { "id": "17675", "name": "Santa Clara", "center": [-121.9552, 37.3541] },
+        { "id": "4561", "name": "Cupertino", "center": [-122.0322, 37.323] },
+        { "id": "17960", "name": "Saratoga", "center": [-122.023, 37.2638] },
+        { "id": "2673", "name": "Campbell", "center": [-121.95, 37.2872] },
+        { "id": "11234", "name": "Los Gatos", "center": [-121.978, 37.2358] }
+      ]
+    }
+  ]
+}
