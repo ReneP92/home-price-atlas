@@ -6,7 +6,6 @@ export const MIN_SALES = 5
 // the largest price movement. Region selection remains geography-independent.
 export function defaultPlace(places: Place[], date: string): Place | undefined {
   return places
-    .filter((place) => place.kind === 'neighborhood')
     .map((place) => {
       const results = (['single-family', 'condo', 'townhouse'] as PropertyType[])
         .map((type) => compare(place, type, 'price', 12, date))
@@ -53,6 +52,7 @@ export function compare(
   metric: Metric,
   horizon: Horizon,
   date: string,
+  minimumSales = MIN_SALES,
 ): Comparison {
   const current = observation(place, type, date)
   const previous = observation(place, type, date, -horizon)
@@ -68,7 +68,7 @@ export function compare(
   ) {
     return { current, previous, change: null, status: 'missing' }
   }
-  if (current.sales < MIN_SALES || previous.sales < MIN_SALES) {
+  if (current.sales < minimumSales || previous.sales < minimumSales) {
     return { current, previous, change: null, status: 'thin' }
   }
   return { current, previous, change: (now / before - 1) * 100, status: 'ready' }
@@ -130,53 +130,4 @@ export function csvCell(value: unknown): string {
   const text = value == null ? '' : String(value)
   const safe = typeof value === 'string' && /^[=+@-]/.test(text) ? `'${text}` : text
   return `"${safe.replaceAll('"', '""')}"`
-}
-
-export function exportRows(
-  places: Place[],
-  type: PropertyType,
-  metric: Metric,
-  horizon: Horizon,
-  date: string,
-): string {
-  const rows: unknown[][] = [
-    [
-      'Region ID',
-      'Neighborhood',
-      'City',
-      'Source property type',
-      'Metric',
-      'Current period start',
-      'Current period end',
-      'Current value',
-      'Prior period end',
-      'Prior value',
-      'Change percent',
-      'Current window sales',
-      'Prior window sales',
-      'Comparison status',
-      'Source',
-    ],
-  ]
-  for (const place of places) {
-    const c = compare(place, type, metric, horizon, date)
-    rows.push([
-      place.id,
-      place.name,
-      place.city,
-      type === 'condo' ? 'Condo/Co-op' : type,
-      metric,
-      c.current?.start,
-      c.current?.date,
-      c.current?.[metric],
-      c.previous?.date,
-      c.previous?.[metric],
-      c.change == null ? null : Number(c.change.toFixed(2)),
-      c.current?.sales,
-      c.previous?.sales,
-      c.status,
-      'Redfin Data Center',
-    ])
-  }
-  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n')
 }

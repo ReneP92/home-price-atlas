@@ -1,6 +1,17 @@
 export type PropertyType = 'single-family' | 'condo' | 'townhouse'
 export type Metric = 'price' | 'ppsf'
 export type Horizon = 3 | 6 | 12
+export type AreaLevel = 'city' | 'neighborhood'
+export type MapLayer = 'change' | 'price' | 'sales' | 'daysOnMarket'
+export type TrendMetric = 'price' | 'sales' | 'daysOnMarket' | 'inventory'
+export type QualityFilter = 'all' | 'ready' | 'thin' | 'missing'
+export type DirectionFilter = 'all' | 'rising' | 'falling' | 'flat'
+export type MapBounds = [number, number, number, number]
+export interface MapFocus {
+  place: Place | null
+  request: number
+  bounds?: MapBounds
+}
 
 export interface Observation {
   date: string

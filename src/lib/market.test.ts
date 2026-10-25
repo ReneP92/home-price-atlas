@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { compare, csvCell, exportRows, median, monthKey, percent } from './market'
+import { compare, csvCell, median, monthKey, percent } from './market'
+import { exportStatistics } from './statistics'
 import type { Observation, Place } from '../types'
 
 function point(date: string, price: number | null, sales: number | null = 10): Observation {
@@ -68,7 +69,7 @@ describe('market comparisons', () => {
     ).toBe('missing')
   })
   it('exports the underlying periods and preserves missing cells safely', () => {
-    const csv = exportRows(
+    const csv = exportStatistics(
       [place([point('2026-09-30', 880_000)])],
       'condo',
       'price',
