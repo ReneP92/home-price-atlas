@@ -3,6 +3,7 @@ import datetime as dt
 import json
 import math
 from pathlib import Path
+from boundaries import validate_boundaries
 
 ROOT = Path(__file__).resolve().parents[1]
 TYPES = {"single-family", "condo", "townhouse"}
@@ -56,3 +57,5 @@ if __name__ == "__main__":
         if region["available"]:
             data = json.loads((ROOT / "public/data" / f"{region['id']}.json").read_text())
             print(json.dumps(validate(data), indent=2))
+            boundaries = json.loads((ROOT / "public/data" / f"{region['id']}-boundaries.geojson").read_text())
+            print(json.dumps({"boundaries": validate_boundaries(boundaries, data)}, indent=2))

@@ -61,3 +61,7 @@ data-refresh region="peninsula-south-bay" *args:
 
 # Run all repository checks, including E2E tests and the production build.
 check: format-check lint test data-test data-validate e2e build
+
+# Refresh city and reference-neighborhood polygons without downloading prices.
+data-boundaries region="peninsula-south-bay":
+    bun run data:boundaries --region "$@"

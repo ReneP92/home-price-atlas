@@ -1,19 +1,28 @@
 import { expect, test } from '@playwright/test'
+import { clickArea } from './map-helpers'
 
 test.beforeEach(async ({ page }) => {
   // Real committed market data; deterministic external decoration. Live tiles
   // are checked separately during visual review, not on every CI interaction.
-  await page.route('https://tiles.openfreemap.org/styles/positron', (route) =>
+  await page.route('https://api.mapbox.com/**', (route) =>
     route.fulfill({
       contentType: 'application/json',
-      headers: { 'access-control-allow-origin': '*' },
-      body: JSON.stringify({
-        version: 8,
-        sources: {},
-        layers: [
-          { id: 'background', type: 'background', paint: { 'background-color': '#eef2ea' } },
-        ],
-      }),
+      headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' },
+      body: new URL(route.request().url()).pathname.startsWith('/styles/v1/')
+        ? JSON.stringify({
+            version: 8,
+            sources: {},
+            layers: [
+              { id: 'background', type: 'background', paint: { 'background-color': '#eef2ea' } },
+            ],
+          })
+        : '{}',
+    }),
+  )
+  await page.route('https://events.mapbox.com/**', (route) =>
+    route.fulfill({
+      status: 204,
+      headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' },
     }),
   )
   await page.route('https://fonts.googleapis.com/**', (route) =>
@@ -21,63 +30,38 @@ test.beforeEach(async ({ page }) => {
   )
 })
 
-test('renders a visible map and drills from city markers into neighborhoods', async ({ page }) => {
+test('renders shaded city areas and drills into reference neighborhoods', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'A closer look at the market.' })).toBeVisible()
   const canvas = page.locator('.map-canvas')
   await expect(canvas).toBeVisible()
   expect((await canvas.boundingBox())!.height).toBeGreaterThan(250)
-  await page
-    .getByRole('button', { name: 'Select Sunnyvale', exact: true })
-    .click({ timeout: 30000 })
-  // Hovering another marker (including one moving under the pointer during a
-  // camera transition) must not retarget the selected city's action buttons.
-  await page
-    .getByRole('button', { name: 'Select Santa Clara', exact: true })
-    .dispatchEvent('mouseenter')
+  await clickArea(page, 'Sunnyvale')
+  await page.locator('[data-place-id="city-17675"]').hover()
   await expect(page.locator('.map-inspector h3')).toHaveText('Sunnyvale')
   await page
     .locator('.inspector-actions')
     .getByRole('button', { name: 'Neighborhoods', exact: true })
     .click()
   await expect(page.getByLabel('Filter by city')).toHaveValue('19457')
-  await expect(page.getByRole('button', { name: 'Select Ponderosa', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Select Ponderosa', exact: true }).click()
+  await clickArea(page, 'Ponderosa')
   await expect(page.locator('.section-heading h2')).toContainText('Ponderosa')
-  await expect
-    .poll(async () => {
-      const pin = await page
-        .getByRole('button', { name: 'Select Ponderosa', exact: true })
-        .boundingBox()
-      const card = await page.locator('.map-inspector').boundingBox()
-      return (
-        !!pin &&
-        !!card &&
-        (pin.x + pin.width < card.x ||
-          pin.x > card.x + card.width ||
-          pin.y + pin.height < card.y ||
-          pin.y > card.y + card.height)
-      )
-    })
-    .toBe(true)
+  await expect(page.locator('.mapboxgl-marker')).toHaveCount(0)
+  await expect(page.locator('.map-bottom')).toContainText('Zillow 2017 reference boundaries')
 })
 
-test('keeps price markers interactive when the external basemap is unavailable', async ({
-  page,
-}) => {
-  await page.route('https://tiles.openfreemap.org/**', (route) => route.abort())
+test('keeps price areas interactive when the external basemap is unavailable', async ({ page }) => {
+  await page.route('https://api.mapbox.com/styles/v1/**', (route) => route.abort())
   await page.goto('/')
-  await page.getByRole('button', { name: 'Select Sunnyvale', exact: true }).click()
+  await clickArea(page, 'Sunnyvale')
   await page
     .locator('.inspector-actions')
     .getByRole('button', { name: 'Neighborhoods', exact: true })
     .click()
   await expect(page.getByLabel('Filter by city')).toHaveValue('19457')
   await expect(page.locator('.map-loading')).toHaveCount(0)
-  await expect(
-    page.getByText('Background map unavailable. Price markers still work.'),
-  ).toBeVisible()
-  await page.getByRole('button', { name: 'Select Ponderosa', exact: true }).click()
+  await expect(page.getByText('Background map unavailable. Price areas still work.')).toBeVisible()
+  await clickArea(page, 'Ponderosa')
   await expect(page.locator('.section-heading h2')).toContainText('Ponderosa')
 })
 
@@ -232,7 +216,7 @@ test('filters the directory to the map, switches layers and expands the map', as
   await page.goto('/')
   await expect(page.locator('.place-row').first()).toBeVisible()
   const all = await page.locator('.place-row').count()
-  await page.getByRole('button', { name: 'Select Sunnyvale', exact: true }).click()
+  await clickArea(page, 'Sunnyvale')
   await page.getByLabel('Map color metric').selectOption('sales')
   await page.getByLabel('Filter to map view').check()
   await expect.poll(() => page.locator('.place-row').count()).toBeLessThan(all)
@@ -246,4 +230,79 @@ test('filters the directory to the map, switches layers and expands the map', as
   await expect(page.getByLabel('Map color metric')).toHaveValue('sales')
   await page.getByLabel('Filter to map view').uncheck()
   await expect(page.locator('.place-row')).toHaveCount(all)
+})
+
+test('switches Mapbox basemaps without losing the selected area or data layer', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await clickArea(page, 'Sunnyvale')
+  await page.getByLabel('Map color metric').selectOption('sales')
+  const satellite = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === '/styles/v1/mapbox/satellite-streets-v12',
+  )
+  await page.getByLabel('Basemap style').selectOption('satellite')
+  await satellite
+  await expect(page.locator('.map-canvas')).toHaveAttribute('data-areas-ready', 'true')
+  await expect(page.locator('.section-heading h2')).toContainText('Sunnyvale')
+  await expect(page.getByLabel('Map color metric')).toHaveValue('sales')
+  const streets = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === '/styles/v1/mapbox/standard',
+  )
+  await page.getByLabel('Basemap style').selectOption('streets')
+  await streets
+  await clickArea(page, 'Sunnyvale')
+  await expect(page.locator('.map-inspector h3')).toHaveText('Sunnyvale')
+})
+
+test('explains Mapbox authorization failures while keeping area data usable', async ({ page }) => {
+  await page.route('https://api.mapbox.com/styles/v1/**', (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: 'application/json',
+      body: '{"message":"Forbidden"}',
+      headers: { 'access-control-allow-origin': '*' },
+    }),
+  )
+  await page.goto('/')
+  await expect(
+    page.getByText('Mapbox rejected the token. Check your .env token and its allowed URLs.'),
+  ).toBeVisible()
+  await clickArea(page, 'Sunnyvale')
+  await expect(page.locator('.section-heading h2')).toContainText('Sunnyvale')
+})
+
+test('reports tile rate limits while keeping local polygons selectable', async ({ page }) => {
+  await page.route('https://api.mapbox.com/styles/v1/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({
+        version: 8,
+        sources: {
+          limited: {
+            type: 'raster',
+            tileSize: 256,
+            tiles: ['https://api.mapbox.com/v4/test-tiles/{z}/{x}/{y}.png'],
+          },
+        },
+        layers: [{ id: 'limited', type: 'raster', source: 'limited' }],
+      }),
+    }),
+  )
+  await page.route('https://api.mapbox.com/v4/test-tiles/**', (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: '{"message":"Rate limit reached"}',
+    }),
+  )
+  await page.goto('/')
+  await expect(
+    page.getByText('Mapbox is rate-limiting map requests. Area data is still available.'),
+  ).toBeVisible()
+  await clickArea(page, 'Sunnyvale')
+  await expect(page.locator('.section-heading h2')).toContainText('Sunnyvale')
 })

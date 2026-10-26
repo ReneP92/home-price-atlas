@@ -250,6 +250,8 @@ def main():
     ]}
     (destination.parent / "catalog.json").write_text(json.dumps(public_catalog, indent=2) + "\n")
     print(f"Wrote {destination.relative_to(ROOT)} ({destination.stat().st_size / 1024:.0f} KB), through {through}", flush=True)
+    from boundaries import refresh_boundaries
+    refresh_boundaries(config["id"])
 
 
 if __name__ == "__main__":

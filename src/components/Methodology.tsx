@@ -72,12 +72,13 @@ export default function Methodology({
           </p>
         </article>
         <article>
-          <h3>Map locations have limits</h3>
+          <h3>Boundary sources and coverage</h3>
           <p>
-            City centers are approximate. Neighborhood points are uniquely name-matched to Zillow’s
-            2017 reference dataset and are not Redfin boundaries. Map-view filtering excludes
-            locations without coordinates. The OpenFreeMap basemap does not create additional price
-            or parcel data.
+            City polygons use US Census BAS boundaries matched by state and city name. Neighborhood
+            polygons are uniquely name-matched Zillow 2017 reference boundaries, shown with dashed
+            outlines. These geographic sources may differ from Redfin’s reporting areas. Map-view
+            filtering intersects polygons and excludes unmatched areas. No boundaries or prices are
+            inferred for missing matches.
           </p>
         </article>
         <article>
@@ -115,11 +116,18 @@ export default function Methodology({
           Redfin downloads <ArrowUpRight size={14} />
         </a>
         <a
+          href="https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer"
+          target="_blank"
+          rel="noreferrer"
+        >
+          City boundaries: US Census <ArrowUpRight size={14} />
+        </a>
+        <a
           href="https://www.arcgis.com/home/item.html?id=56b89613f9f7450fb44e857691a244e7"
           target="_blank"
           rel="noreferrer"
         >
-          Reference locations: Zillow / EPA <ArrowUpRight size={14} />
+          Reference boundaries: Zillow / EPA <ArrowUpRight size={14} />
         </a>
       </div>
       <button className="primary-button" onClick={() => dialog.current?.close()}>

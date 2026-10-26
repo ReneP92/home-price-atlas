@@ -302,6 +302,9 @@
   height: 550px;
 }
 .map-layer-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   position: absolute;
   top: 62px;
   left: 17px;
@@ -340,6 +343,9 @@
   padding: 17px 16px 12px;
   box-shadow: 0 5px 25px #27462215;
   z-index: 3;
+}
+.map-inspector.is-preview {
+  pointer-events: none;
 }
 .inspector-close {
   position: absolute;
@@ -445,18 +451,12 @@
 .map-key.sequential > i {
   background: linear-gradient(90deg, #b5cbd5, #8cabbc, #668da8, #416d93, #234f77);
 }
-.map-price-pin.is-highlighted {
-  box-shadow:
-    0 0 0 4px #215a4250,
-    0 4px 10px #183d2b28;
-  z-index: 4;
-}
 .map-inspector ~ .map-bottom {
   right: auto;
   max-width: calc(100% - 32px);
 }
 .basemap-notice {
-  top: 106px;
+  top: 133px;
   max-width: 250px;
 }
 .map-expanded {
@@ -883,7 +883,7 @@
   }
   .basemap-notice {
     left: 10px;
-    top: 93px;
+    top: 121px;
     font-size: 9px;
     max-width: 190px;
   }
@@ -1115,7 +1115,7 @@
     height: auto;
   }
   .map-shell {
-    height: 430px;
+    height: 520px;
   }
   .map-heading {
     font-size: 8px;
@@ -1130,6 +1130,8 @@
     right: 10px;
     bottom: 112px;
     padding: 12px 11px 9px;
+    max-height: calc(100% - 270px);
+    overflow-y: auto;
   }
   .map-inspector > .eyebrow {
     font-size: 6px;

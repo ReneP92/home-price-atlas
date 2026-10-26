@@ -1,3 +1,5 @@
+import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
+
 export type PropertyType = 'single-family' | 'condo' | 'townhouse'
 export type Metric = 'price' | 'ppsf'
 export type Horizon = 3 | 6 | 12
@@ -55,6 +57,38 @@ export interface Dataset {
     observations: number
   }[]
   regions: Place[]
+  boundaries?: AreaBoundaries
+}
+
+export interface BoundaryProperties {
+  placeId: string
+  name: string
+  city: string
+  kind: AreaLevel
+  source: string
+  vintage: string
+  sourceId: string
+  reference: boolean
+  match: string
+}
+
+export type AreaBoundary = Omit<
+  Feature<Polygon | MultiPolygon, BoundaryProperties>,
+  'id' | 'bbox'
+> & {
+  id: string
+  bbox: MapBounds
+}
+
+export interface AreaBoundaries extends FeatureCollection<
+  Polygon | MultiPolygon,
+  BoundaryProperties
+> {
+  schemaVersion: number
+  region: string
+  generatedAt: string
+  sources: { name: string; url: string }[]
+  features: AreaBoundary[]
 }
 
 export interface Catalog {

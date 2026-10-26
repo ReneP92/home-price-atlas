@@ -13,12 +13,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "data:refresh": "python3 scripts/refresh.py",
+    "data:boundaries": "python3 scripts/boundaries.py",
     "data:validate": "python3 scripts/validate.py",
     "data:test": "python3 -m unittest discover -s scripts -p 'test_*.py'"
   },
   "dependencies": {
+    "@turf/boolean-intersects": "^7.4.0",
     "lucide-react": "^0.468.0",
-    "maplibre-gl": "^5.0.0",
+    "mapbox-gl": "^3.33.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.0.0"

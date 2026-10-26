@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// Test credentials are deliberately non-functional. All Mapbox requests are
+// intercepted, and the local .env token must never enter test traces or CI.
+const testToken = `pk.${Buffer.from(JSON.stringify({ u: 'local-tests', a: 'not-a-real-token' })).toString('base64url')}.not-a-real-token`
+process.env.VITE_MAPBOX_ACCESS_TOKEN = testToken
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -10,7 +15,7 @@ export default defineConfig({
   use: {
     channel: process.env.CI ? 'chrome' : undefined,
     launchOptions: { args: process.env.CI ? ['--enable-unsafe-swiftshader'] : [] },
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://127.0.0.1:5175',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -22,8 +27,9 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' } },
   ],
   webServer: {
-    command: 'bun run dev --port 5173 --strictPort',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
+    command: 'bun run dev --port 5175 --strictPort',
+    url: 'http://127.0.0.1:5175',
+    env: { VITE_MAPBOX_ACCESS_TOKEN: testToken },
+    reuseExistingServer: false,
   },
 })

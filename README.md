@@ -13,20 +13,22 @@ A city and neighborhood home-price explorer, starting with California's Peninsul
 - Explore annual sales volume, sales-activity changes, median days on market, and reported inventory.
 - See coverage, rising/flat/falling market breadth, and the middle 50% of area price changes. Filter by sample quality or direction; choose 5, 10, or 20 sales per comparison window.
 - Scrub or play the reporting timeline. Dates, thresholds, metrics, geographic scope, comparisons, and map-view filters are shareable in the URL.
-- Switch map coloring between price changes, price levels, sales activity, and days on market. Inspect markers, link selection to the directory, filter to the viewport, fit filtered areas, and expand the map.
+- Switch map coloring between price changes, price levels, sales activity, and days on market. Hover or click shaded areas, link selection to the directory, filter to the viewport, fit filtered boundaries, and expand the map.
 - Save areas on your device and export the underlying observations and statistics as CSV.
-- Run locally, with no paid data subscription, backend, account, or API key.
+- Run locally with free housing data and a configurable Mapbox basemap.
 
 ## Run locally
 
 Requires Node.js 24+, Bun 1.4+, and Python 3.12+ (only for data refreshes).
+
+For a new checkout, copy `.env.example` to `.env` and set `VITE_MAPBOX_ACCESS_TOKEN` to your public Mapbox token. The `.env` file is ignored by Git; the tracked example contains no credentials. Restart the dev server after changing environment settings. Vite includes this public token in the locally served browser bundle.
 
 ```sh
 bun install --frozen-lockfile
 bun run dev
 ```
 
-Open http://127.0.0.1:5173. The checked-in regional snapshot makes the app usable immediately. An internet connection is needed for background map tiles and web fonts; the list, charts, and calculations use the local snapshot.
+Open http://127.0.0.1:5173. The checked-in regional snapshot makes the market data usable immediately. An internet connection and the Mapbox token are needed for the basemap; the list, charts, and calculations use the local snapshot.
 
 ```sh
 bun run lint
@@ -37,6 +39,8 @@ bunx playwright install chromium
 bun run test:e2e
 bun run build
 ```
+
+E2E tests start a separate local server on port 5175 with a non-functional placeholder token and intercepted Mapbox requests. They do not require the real token in CI or use it in recorded test traces.
 
 ### Command shortcuts
 
@@ -114,17 +118,19 @@ See [Redfin's methodology](https://www.redfin.com/news/data-center/methodology/)
 - **Market breadth** counts eligible rising, flat (within 0.05%), and falling areas. The middle 50% is the interquartile range of those area changes, not a home-price range or a confidence interval.
 - **Trend charts** support prices, sales counts, days on market, and inventory. Adjacent count-chart points still overlap in time; annual totals use the separate disjoint-quarter calculation above. Legend items can be toggled independently.
 
-### Map locations
+### Map areas and boundary sources
 
-The map and directory always use the same selected geographic level and filters. The initial city view uses approximate city centers defined in region configuration. Select a city marker and choose **Neighborhoods** to drill down, or use the geographic-level switch directly. Selecting a marker shows its price, change, and both sales counts; selecting a directory row focuses the corresponding map location.
+The map uses **filled polygons with outlines**, rather than dots. The map and directory use the same selected geographic level and filters. Select a shaded city and choose **Neighborhoods** to drill down, or use the geographic-level switch directly. Hover previews an area's statistics; clicking locks the detail card to that area. Directory selection fits the map to the matching boundary.
 
-Neighborhood points come from the **[EPA-hosted Zillow 2017 neighborhood dataset](https://www.arcgis.com/home/item.html?id=56b89613f9f7450fb44e857691a244e7)**. A unique, exact normalized city and neighborhood-name match is required. These points are **approximate locators, not Redfin neighborhood boundaries**. Metrics are joined by Redfin region IDs, never by spatial proximity. Unmatched neighborhoods remain available in the list, charts, and export.
+**City boundaries** come from the latest BAS municipal/CDP layers in [US Census TIGERweb](https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer). The generator matches a unique normalized city name within the configured state FIPS code and geographic extent. The initial boundary snapshot uses BAS 2026 and covers all 22 configured cities. Some municipal boundaries include water or uninhabited land.
 
-**Filter to map view** explicitly excludes areas with no reference coordinates. The initial snapshot has 73 mapped neighborhood reference points. Selecting an unmapped neighborhood shows city context without inventing a neighborhood point. Map coloring for price level and sales activity uses a separate sequential scale; these colors do not imply appreciation. Missing values are never shown as zero.
+**Neighborhood polygons** come from the [EPA-hosted Zillow 2017 neighborhood dataset](https://www.arcgis.com/home/item.html?id=56b89613f9f7450fb44e857691a244e7). Only unique normalized city/neighborhood-name matches are included. The initial snapshot covers 73 neighborhoods. These are explicitly labeled, dashed **reference boundaries**, which can differ from Redfin's reporting areas. City shapes also come from a separate geographic source, not a reconstruction of Redfin's statistical geography. Every boundary retains its source, vintage, and source ID. No shapes are inferred for unmatched areas.
 
-Reference locations are credited to Zillow and the US EPA. The basemap is **[OpenFreeMap Positron](https://openfreemap.org/quick_start/)**: a light vector style with sharp labels, streets, and building footprints as you zoom. Its subdued palette keeps the price overlays readable. The public service requires no registration, API key, or subscription and supports commercial use and US-wide coverage.
+**Filter to map view** intersects the real polygons with the map's unpadded viewport, including holes and partial overlaps. Areas without matched boundaries are excluded only when that filter is enabled. Unmatched areas remain available in the list, charts, and CSV; selecting an unmatched neighborhood shows city context. Price-level and activity layers use a separate sequential scale, and missing values are never shown as zero.
 
-MapLibre loads the provider's attribution automatically: OpenFreeMap, OpenMapTiles, and OpenStreetMap. Maps load over the internet while the app runs on localhost. Map location coverage is independent of the basemap provider; changing providers does not create missing neighborhood coordinates or price data.
+The app uses **[Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/)** with **Mapbox Standard** for streets and **Satellite Streets** for aerial imagery with labels. The map's **MAP** selector switches basemaps while preserving filters, selection, and area overlays. Mapbox access is configured through the ignored `.env` file; usage follows your [Mapbox plan](https://www.mapbox.com/pricing). The SDK displays its logo and attribution automatically.
+
+Boundaries are local generated GeoJSON in `public/data/*-boundaries.geojson`; background maps load from Mapbox while the app runs on localhost. Boundary coverage and housing data are independent of the basemap provider.
 
 ### Source files
 
@@ -140,6 +146,13 @@ The nationwide exports are large. The importer streams the newest-first files an
 
 ```sh
 bun run data:refresh
+```
+
+This refreshes both market data and boundary snapshots. To update just the boundaries:
+
+```sh
+just data-boundaries
+# Or: bun run data:boundaries --region peninsula-south-bay
 ```
 
 The default retention is approximately 26 months, enough for a full 12-month chart and prior-year comparisons. Override it when necessary:
@@ -165,7 +178,7 @@ Outputs in `public/data/` are generated. Regenerate them with the importer rathe
 
 Geography is configured in `config/regions.json`, not embedded in UI or calculation code.
 
-1. Add a region with a unique slug, display name, state abbreviation, and `[west, south, east, north]` map bounds.
+1. Add a region with a unique slug, display name, state abbreviation, two-digit `stateFips` code, and `[west, south, east, north]` map bounds.
 2. Add its cities using IDs from Redfin's **city lookup**, plus approximate city-center coordinates. Match county parent IDs when city names are ambiguous.
 3. Run `python3 scripts/refresh.py --region your-region-id`.
 4. Commit the configuration and generated snapshot. The region picker discovers it from the generated catalog.
@@ -177,9 +190,12 @@ The initial configuration covers 22 cities. Additional US regions become availab
 ```text
 config/regions.json       Geographic scope and stable provider IDs
 scripts/refresh.py       Streaming import, validation, reference-location matching
+scripts/boundaries.py    Census and Zillow reference polygon matching and validation
 public/data/             Small generated regional snapshots and catalog
 src/lib/market.ts        Period matching, sample rules, changes, and formatting
 src/lib/statistics.ts    Annual sales, benchmarks, coverage, geographic filtering, exports
+src/lib/boundaries.ts    Polygon-aware viewport intersection
+src/lib/area-layers.ts   Mapbox fill, outline, and selection layers
 src/components/         Interactive map, timeline, coverage, activity cards, and trend charts
 src/Explorer.tsx         Data loading, scope, filters, URL state, and saved comparisons
 e2e/                    Desktop and mobile user journeys
@@ -201,4 +217,4 @@ Open http://127.0.0.1:4173. Both development and preview servers bind to localho
 
 ## License and attribution
 
-Application code is MIT licensed. Third-party housing data and reference locations retain their respective source terms and attribution requirements; the code license does not relicense those datasets. Redfin is the source of the market data. Zillow and the US EPA are the source of neighborhood reference locations. This project is independent of those organizations.
+Application code is MIT licensed. Third-party housing data, boundaries, and the Mapbox SDK retain their respective terms and attribution requirements; the code license does not relicense them. Redfin provides market data, the US Census Bureau provides city boundaries, and Zillow / US EPA provide neighborhood reference boundaries. This project is independent of those organizations.

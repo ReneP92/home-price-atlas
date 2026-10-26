@@ -9,7 +9,7 @@ import {
   Download,
   House,
   List,
-  Map,
+  Map as MapIcon,
   MapPin,
   Search,
   Share2,
@@ -35,11 +35,11 @@ import type {
 import { compare, dateLabel, defaultPlace } from './lib/market'
 import {
   exportStatistics,
-  inBounds,
   matchesDirection,
   parseMapBounds,
   reportingDates,
 } from './lib/statistics'
+import { boundaryInBounds } from './lib/boundaries'
 import MarketOverview from './components/MarketOverview'
 import Timeline from './components/Timeline'
 import AreaDirectory from './components/AreaDirectory'
@@ -99,6 +99,23 @@ export default function Explorer() {
         const dataset: Dataset = await snapshot.json()
         if (dataset.schemaVersion !== 1 || !Array.isArray(dataset.regions) || !dataset.dataThrough)
           throw new Error('This snapshot uses an unsupported data format.')
+        try {
+          const response = await fetch(`${BASE}data/${chosen.id}-boundaries.geojson`, {
+            signal: controller.signal,
+          })
+          if (response.ok) {
+            const boundaries = await response.json()
+            if (
+              boundaries.type === 'FeatureCollection' &&
+              boundaries.schemaVersion === 1 &&
+              boundaries.region === chosen.id &&
+              Array.isArray(boundaries.features)
+            )
+              dataset.boundaries = boundaries
+          }
+        } catch {
+          // Market data remains usable if a region has no boundary snapshot.
+        }
         if (!controller.signal.aborted) setResource({ catalog, dataset, error: null })
       } catch (error) {
         if (!controller.signal.aborted)
@@ -277,6 +294,11 @@ function Dashboard({
     () => dataset.regions.filter((r) => r.kind === 'neighborhood'),
     [dataset],
   )
+  const boundaryById = useMemo(
+    () => new Map(dataset.boundaries?.features.map((feature) => [feature.id, feature])),
+    [dataset],
+  )
+  const mappedIds = useMemo(() => new Set(boundaryById.keys()), [boundaryById])
   const scoped = useMemo(
     () =>
       (level === 'city' ? cities : neighborhoods).filter(
@@ -285,9 +307,20 @@ function Dashboard({
           (!showSaved || savedIds.includes(r.id)) &&
           (!query.trim() ||
             `${r.name} ${r.city}`.toLowerCase().includes(query.trim().toLowerCase())) &&
-          (!viewportOnly || inBounds(r.center, viewport)),
+          (!viewportOnly || boundaryInBounds(boundaryById.get(r.id), viewport)),
       ),
-    [level, cities, neighborhoods, city, showSaved, savedIds, query, viewportOnly, viewport],
+    [
+      level,
+      cities,
+      neighborhoods,
+      city,
+      showSaved,
+      savedIds,
+      query,
+      viewportOnly,
+      viewport,
+      boundaryById,
+    ],
   )
   const filtered = useMemo(
     () =>
@@ -728,7 +761,7 @@ function Dashboard({
                 onClick={() => setView('map')}
                 className={view === 'map' ? 'active' : ''}
               >
-                <Map size={15} />
+                <MapIcon size={15} />
               </button>
               <button
                 aria-label="List view"
@@ -777,7 +810,7 @@ function Dashboard({
               )}
               <span>
                 {viewportOnly
-                  ? 'Areas without coordinates are excluded.'
+                  ? 'Areas without matched boundaries are excluded.'
                   : 'Click a chip to remove its filter.'}
               </span>
             </div>
@@ -825,6 +858,7 @@ function Dashboard({
               </Suspense>
             )}
             <AreaDirectory
+              mappedIds={mappedIds}
               places={filtered}
               level={level}
               selected={selected}

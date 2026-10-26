@@ -6,6 +6,7 @@
       "name": "Peninsula & South Bay",
       "description": "Hillsborough to Los Gatos, California",
       "state": "CA",
+      "stateFips": "06",
       "bounds": [-122.52, 37.18, -121.85, 37.63],
       "cities": [
         { "id": "8642", "name": "Hillsborough", "center": [-122.3794, 37.5741] },

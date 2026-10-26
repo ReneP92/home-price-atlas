@@ -12,6 +12,7 @@ import type { AreaLevel, Horizon, Metric, Place, PropertyType, QualityFilter } f
 import { changeClass, compare, money, percent } from '../lib/market'
 
 interface Props {
+  mappedIds: ReadonlySet<string>
   places: Place[]
   level: AreaLevel
   selected: Place | null
@@ -88,8 +89,8 @@ export default function AreaDirectory(p: Props) {
                     <i />
                     {money(c.current?.[p.metric])}
                     {p.metric === 'ppsf' ? ' / ft²' : ''}
-                    {!place.center && (
-                      <MapPin size={10} aria-label="Reference location unavailable" />
+                    {!p.mappedIds.has(place.id) && (
+                      <MapPin size={10} aria-label="Boundary unavailable" />
                     )}
                   </span>
                 </span>
