@@ -1,0 +1,360 @@
+/* Shared UI type scale. Loaded after the layout styles so compact/mobile
+   layouts retain readable labels instead of shrinking them to 6-9px. */
+:root {
+  --text-fine: 11px;
+  --text-small: 12px;
+  --text-control: 13px;
+  --text-body: 14px;
+}
+
+.brand-beta,
+.eyebrow,
+.intro-eyebrow,
+.region-button small,
+.data-freshness,
+.count-badge,
+.nav-count,
+.scope-switch button > span,
+.timeline-date small,
+.timeline-window small,
+.directory-column-head,
+.directory-footer > span,
+.map-inspector > .eyebrow,
+.stats-heading > .eyebrow,
+.stats-heading > span:last-child,
+.section-heading .eyebrow,
+.chart-detail > .eyebrow,
+.chart-tabs > button > span,
+.comparison-tray > span:first-child,
+.comparison-tray-hint {
+  font-size: var(--text-fine);
+  line-height: 1.5;
+}
+
+.github-link,
+.region-menu small,
+.region-menu > a,
+.summary-bottom,
+.summary-bottom > span:last-child,
+.summary-caption,
+.summary-caption > button,
+.explore-header p,
+.matched-toggle,
+.city-line-toggle,
+.auto-detail-toggle,
+.coverage-summary > p,
+.coverage-help,
+.market-breadth button > span:last-child,
+.market-breadth > p,
+.scope-bar > p,
+.city-context-button,
+.timeline-window,
+.timeline-latest,
+.active-filters > button,
+.active-filters > span,
+.directory-header > span,
+.directory-header select,
+.place-info > span,
+.place-change small,
+.place-change > small:only-child,
+.directory-footer,
+.selection-strip > span,
+.heading-location,
+.chart-caption,
+.chart-caption > span,
+.chart-legend > span,
+.interactive-legend > button,
+.detail-sub,
+.detail-price > small,
+.chart-detail dl > div,
+.detail-comparisons > div,
+.detail-comparisons strong,
+.chart-footnote,
+.comparison-tray > button,
+.stat-cards p,
+.stat-cards article > small,
+.stat-cards details,
+.stat-cards details small,
+.stat-cards > article > strong > em,
+.benchmark-strip small,
+.benchmark-strip > button,
+.stat-trend-links > span,
+.stat-trend-links > button,
+.stats-footnote,
+.page-footer > div,
+.page-footer strong,
+.page-footer > div:first-child > span:last-child,
+.page-footer a,
+.page-footer button {
+  font-size: var(--text-small);
+  line-height: 1.6;
+}
+
+.header-inner nav button,
+.region-button strong,
+.region-menu strong,
+.summary-top > span:first-child,
+.search-box input,
+.place-info > strong,
+.place-change,
+.list-only .place-info > strong,
+.list-only .place-change,
+.primary-button,
+.coverage-summary > strong,
+.timeline-date strong,
+.benchmark-strip strong,
+.methodology-dialog > p,
+.methodology-grid h3,
+.methodology-grid p,
+.loading-center p {
+  font-size: var(--text-body);
+}
+
+.select-wrap select,
+.sample-select select,
+.segmented button,
+.segmented.small > button,
+.scope-switch button,
+.text-button,
+.outline-button,
+.quality-chip,
+.quality-chip strong,
+.chart-tabs > button,
+.trend-metric-select select,
+.external-place,
+.stat-cards > article > span,
+.source-links > a,
+.empty-directory > strong,
+.empty-directory > p,
+.chart-empty > strong,
+.chart-empty > p,
+.map-fallback strong,
+.map-fallback span,
+.map-empty strong,
+.map-empty span {
+  font-size: var(--text-control);
+  line-height: 1.5;
+}
+
+.sample-status,
+.map-heading,
+.map-key,
+.map-bottom > p,
+.map-viewport-toggle,
+.map-layer-picker label,
+.basemap-notice,
+.inspector-values small,
+.inspector-na,
+.map-inspector > p,
+.inspector-actions > button,
+.inspector-actions > button:last-child:nth-child(3),
+.explore-bottom,
+.explore-bottom > span,
+.explore-bottom > button {
+  font-size: var(--text-fine);
+  line-height: 1.5;
+}
+
+.map-layer-picker select {
+  font-size: var(--text-control);
+  min-width: 0;
+}
+.map-inspector h3 {
+  font-size: 17px;
+  line-height: 1.4;
+}
+.inspector-values > strong {
+  font-size: 20px;
+}
+.mapboxgl-ctrl-attrib {
+  font-size: var(--text-fine) !important;
+  line-height: 1.5 !important;
+}
+
+/* Allow controls and data rows to accommodate the increased type size. */
+.toolbar,
+.scope-bar,
+.summary-caption,
+.explore-bottom {
+  flex-wrap: wrap;
+}
+.toolbar > .search-box {
+  min-width: 210px;
+}
+.select-wrap,
+.search-box {
+  min-height: 40px;
+}
+.segmented button {
+  min-height: 32px;
+}
+.directory-header select {
+  max-width: 170px;
+}
+.place-row {
+  min-height: 76px;
+}
+.place-change {
+  min-width: 103px;
+}
+.place-info > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-inspector {
+  width: 285px;
+}
+.map-layer-picker {
+  max-width: calc(100% - 70px);
+}
+.map-heading {
+  max-width: calc(100% - 72px);
+  flex-wrap: wrap;
+}
+.methodology-grid p {
+  line-height: 1.75;
+}
+.page-footer {
+  flex-wrap: wrap;
+}
+
+@media (min-width: 601px) {
+  .selection-strip > button {
+    font-size: var(--text-small);
+  }
+  .summary-caption > button {
+    max-width: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .directory-header {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .chart-tabs {
+    gap: 14px;
+  }
+  .map-inspector {
+    width: 240px;
+    right: 52px;
+  }
+  .summary-bottom {
+    align-items: flex-start;
+  }
+  .timeline-window {
+    min-width: 160px;
+  }
+}
+
+@media (max-width: 600px) {
+  .intro p {
+    font-size: var(--text-body);
+    line-height: 1.6;
+  }
+  .summary-top > span:first-child,
+  .summary-bottom,
+  .summary-bottom > span:last-child {
+    font-size: var(--text-fine);
+  }
+  .summary-bottom > span:first-child {
+    max-width: none;
+  }
+  .data-freshness {
+    flex-basis: 100px;
+    font-size: var(--text-fine);
+  }
+  .region-button strong {
+    font-size: var(--text-small);
+  }
+  .quality-chip {
+    flex-basis: 40%;
+  }
+  .coverage-summary > strong,
+  .coverage-summary > p,
+  .scope-bar > p,
+  .stat-cards p,
+  .stat-cards article > small,
+  .stats-footnote {
+    font-size: var(--text-small);
+  }
+  .toolbar > .search-box {
+    min-width: 0;
+  }
+  .search-box input,
+  .select-wrap select {
+    font-size: 16px;
+  }
+  .toolbar > .city-select,
+  .toolbar > .metric-select {
+    min-width: 130px;
+  }
+  .sample-select {
+    min-width: 105px;
+  }
+  .period-switch {
+    flex: 1;
+  }
+  .timeline {
+    gap: 12px;
+  }
+  .timeline-date {
+    min-width: 120px;
+  }
+  .timeline-player {
+    min-width: 155px;
+  }
+  .timeline-date small {
+    font-size: var(--text-fine);
+    letter-spacing: 0.4px;
+  }
+  .directory {
+    height: 400px;
+  }
+  .map-inspector {
+    width: 230px;
+    max-width: calc(100% - 68px);
+    max-height: calc(100% - 280px);
+    right: 52px;
+  }
+  .map-inspector h3 {
+    font-size: 16px;
+  }
+  .inspector-values > strong {
+    font-size: 19px;
+  }
+  .map-layer-picker {
+    top: 57px;
+  }
+  .basemap-notice {
+    top: 145px;
+  }
+  .chart-actions {
+    max-width: none;
+  }
+  .trend-metric-select select {
+    max-width: none;
+  }
+  .interactive-legend > button {
+    font-size: var(--text-fine);
+  }
+  .stat-cards > article > span {
+    font-size: var(--text-small);
+  }
+  .detail-comparisons {
+    flex-wrap: wrap;
+  }
+  .chart-detail dl > div {
+    font-size: var(--text-fine);
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-beta {
+    display: none;
+  }
+  .header-inner nav {
+    gap: 10px;
+  }
+}

@@ -219,7 +219,7 @@ export default function AreaTrends(p: Props) {
                   <CartesianGrid vertical={false} stroke="#eaece7" strokeDasharray="3 4" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 11, fill: '#87908a' }}
+                    tick={{ fontSize: 13, fill: '#687663' }}
                     tickLine={false}
                     axisLine={false}
                     minTickGap={30}
@@ -227,7 +227,7 @@ export default function AreaTrends(p: Props) {
                     dy={10}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#87908a' }}
+                    tick={{ fontSize: 13, fill: '#687663' }}
                     tickLine={false}
                     axisLine={false}
                     width={65}
@@ -239,7 +239,7 @@ export default function AreaTrends(p: Props) {
                     contentStyle={{
                       borderRadius: 12,
                       border: '1px solid #e2e7e0',
-                      fontSize: 12,
+                      fontSize: 14,
                       boxShadow: '0 8px 30px #163d4312',
                     }}
                     formatter={(value, name, item) => [
