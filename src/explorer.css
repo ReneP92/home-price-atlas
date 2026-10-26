@@ -1,5 +1,6 @@
 .matched-toggle,
-.city-line-toggle {
+.city-line-toggle,
+.auto-detail-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -9,7 +10,8 @@
   white-space: nowrap;
 }
 .matched-toggle input,
-.city-line-toggle input {
+.city-line-toggle input,
+.auto-detail-toggle input {
   accent-color: #28644e;
   margin: 0;
   width: 12px;
@@ -179,6 +181,21 @@
   font-size: 10px;
   color: #8b9a7c;
   line-height: 1.6;
+}
+.map-back {
+  pointer-events: auto;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: inherit;
+  color: #3f704c;
+}
+.map-back:hover {
+  text-decoration: underline;
+}
+.map-breadcrumb-separator {
+  color: #a8b49c;
 }
 .city-context-button {
   font-size: 10px;

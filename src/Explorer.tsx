@@ -197,6 +197,8 @@ function Dashboard({
       ? (initial.get('type') as PropertyType)
       : 'single-family',
   )
+  const [autoDetail, setAutoDetail] = useState(initial.get('detail') !== 'manual')
+  const beforeZoomDrill = useRef<{ city: string; query: string } | null>(null)
   const [horizon, setHorizon] = useState<Horizon>(() =>
     [3, 6, 12].includes(Number(initial.get('months')))
       ? (Number(initial.get('months')) as Horizon)
@@ -375,6 +377,7 @@ function Dashboard({
     const params = new URLSearchParams({
       region: dataset.id,
       level,
+      detail: autoDetail ? 'auto' : 'manual',
       type,
       months: String(horizon),
       metric,
@@ -392,14 +395,15 @@ function Dashboard({
     if (direction !== 'all') params.set('direction', direction)
     if (matched) params.set('matched', '1')
     if (comparedIds.length) params.set('compare', comparedIds.join(','))
-    if (viewportOnly && viewport) {
-      params.set('mapview', '1')
+    if ((viewportOnly || autoDetail) && viewport) {
+      if (viewportOnly) params.set('mapview', '1')
       params.set('bbox', viewport.map((v) => v.toFixed(6)).join(','))
     }
     history.replaceState(null, '', `${location.pathname}?${params}`)
   }, [
     dataset.id,
     level,
+    autoDetail,
     type,
     horizon,
     metric,
@@ -437,6 +441,8 @@ function Dashboard({
     setFocus((previous) => ({ place, request: previous.request + 1 }))
   }
   function resetFilters() {
+    if (autoDetail) setLevel('city')
+    beforeZoomDrill.current = null
     setCity('')
     setQuery('')
     setShowSaved(false)
@@ -455,6 +461,8 @@ function Dashboard({
     if (next !== 'all' && (quality === 'thin' || quality === 'missing')) setQuality('all')
   }
   function chooseLevel(next: AreaLevel) {
+    setAutoDetail(false)
+    beforeZoomDrill.current = null
     setLevel(next)
     setViewportOnly(false)
     setQuality('all')
@@ -467,6 +475,7 @@ function Dashboard({
     setFocus((previous) => ({ place: activeCity || null, request: previous.request + 1 }))
   }
   function chooseCity(id: string) {
+    if (level === 'neighborhood') beforeZoomDrill.current = null
     setCity(id)
     setViewportOnly(false)
     setHovered(null)
@@ -478,6 +487,7 @@ function Dashboard({
     }))
   }
   function drill(place: Place) {
+    if (autoDetail && level === 'city') beforeZoomDrill.current = { city, query }
     setLevel('neighborhood')
     setCity(place.cityId)
     setQuery('')
@@ -495,10 +505,46 @@ function Dashboard({
     setFocus((previous) => ({ place, request: previous.request + 1 }))
   }
   function viewCity(place: Place) {
+    setAutoDetail(false)
+    beforeZoomDrill.current = null
     setLevel('city')
     resetFilters()
     setChartMode('types')
     selectPlace(place)
+  }
+  function changeZoomLevel(next: AreaLevel, target?: Place) {
+    if (!autoDetail || next === level) return
+    setHovered(null)
+    // Switching geometry must not start a second camera animation or reopen a
+    // stale selected-area card. The viewport stays exactly where the user zoomed.
+    setFocus((previous) => ({ place: null, request: previous.request + 1, preserveView: true }))
+    if (next === 'neighborhood' && target) {
+      beforeZoomDrill.current = { city, query }
+      setLevel('neighborhood')
+      setCity(target.cityId)
+      setSelectedId(
+        defaultPlace(
+          neighborhoods.filter((r) => r.cityId === target.cityId && mappedIds.has(r.id)),
+          date,
+        )?.id || '',
+      )
+    } else if (next === 'city') {
+      setLevel('city')
+      setCity(beforeZoomDrill.current?.city || '')
+      setQuery(beforeZoomDrill.current?.query || '')
+      setSelectedId(target?.id || defaultPlace(cities, date)?.id || '')
+      beforeZoomDrill.current = null
+    }
+  }
+  function backToCityAreas() {
+    const parent = activeCity || selectedCity
+    setLevel('city')
+    setCity('')
+    setQuery('')
+    setHovered(null)
+    setSelectedId(parent?.id || '')
+    beforeZoomDrill.current = null
+    setFocus((previous) => ({ place: null, request: previous.request + 1 }))
   }
   function toggleCompared(id: string) {
     if (comparedIds.includes(id)) {
@@ -681,10 +727,24 @@ function Dashboard({
                 Neighborhoods <span>{neighborhoods.length}</span>
               </button>
             </div>
+            <label
+              className="auto-detail-toggle"
+              title="Zoom in to show matched neighborhood areas; zoom out to return to cities. Manual level switches pause automatic detail."
+            >
+              <input
+                type="checkbox"
+                aria-label="Automatic geographic detail"
+                checked={autoDetail}
+                onChange={(e) => setAutoDetail(e.target.checked)}
+              />
+              Follow map zoom
+            </label>
             <p>
-              {level === 'city'
-                ? 'Broader samples. Select a city to explore its neighborhoods.'
-                : 'Smaller samples. Use the city benchmark when local sales are thin.'}
+              {autoDetail
+                ? level === 'city'
+                  ? 'Zoom into a city to reveal its neighborhood areas.'
+                  : 'Zoom out to return to city areas.'
+                : 'Manual detail. Choose Cities or Neighborhoods, or enable Follow map zoom.'}
             </p>
             {activeCity && level === 'neighborhood' && (
               <button className="city-context-button" onClick={() => viewCity(activeCity)}>
@@ -831,6 +891,10 @@ function Dashboard({
                   dataset={dataset}
                   places={filtered}
                   level={level}
+                  autoDetail={autoDetail}
+                  cityId={city}
+                  cityName={activeCity?.name}
+                  viewportBounds={viewport}
                   type={type}
                   metric={metric}
                   horizon={horizon}
@@ -846,6 +910,8 @@ function Dashboard({
                   onSelect={selectPlace}
                   onHover={setHovered}
                   onDrill={drill}
+                  onZoomLevel={changeZoomLevel}
+                  onBack={backToCityAreas}
                   onViewport={updateViewport}
                   onViewportOnly={setViewportOnly}
                   onLayer={setMapLayer}

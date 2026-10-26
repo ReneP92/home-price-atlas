@@ -306,3 +306,99 @@ test('reports tile rate limits while keeping local polygons selectable', async (
   await clickArea(page, 'Sunnyvale')
   await expect(page.locator('.section-heading h2')).toContainText('Sunnyvale')
 })
+
+test('zooms from city polygons into neighborhoods and back without resetting market filters', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await clickArea(page, 'Sunnyvale')
+  await page.getByRole('button', { name: /^Condos/ }).click()
+  await page.getByLabel('Minimum sales per comparison window').selectOption('10')
+  await page.getByLabel('Map color metric').selectOption('sales')
+  const canvas = page.locator('.map-canvas')
+  await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  for (
+    let i = 0;
+    i < 6 && (i === 0 || Number(await canvas.getAttribute('data-camera-zoom')) < 12);
+    i++
+  ) {
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
+    await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  }
+  await expect(
+    page.getByRole('button', { name: 'Neighborhood view', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByLabel('Filter by city')).toHaveValue('19457')
+  await expect(page.getByLabel('Automatic geographic detail')).toBeChecked()
+  await expect(canvas).toHaveAttribute('data-areas-ready', 'true')
+  expect(Number(await canvas.getAttribute('data-camera-zoom'))).toBeGreaterThanOrEqual(12)
+  for (let i = 0; i < 6 && Number(await canvas.getAttribute('data-camera-zoom')) > 10.75; i++) {
+    await page.getByRole('button', { name: 'Zoom out', exact: true }).click()
+    await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  }
+  await expect(page.getByRole('button', { name: 'City view', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.getByLabel('Filter by city')).toHaveValue('')
+  await expect(page.getByRole('button', { name: /^Condos/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.getByLabel('Minimum sales per comparison window')).toHaveValue('10')
+  await expect(page.getByLabel('Map color metric')).toHaveValue('sales')
+})
+
+test('supports a manual level lock and a map breadcrumb back to cities', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'City view', exact: true }).click()
+  await expect(page.getByLabel('Automatic geographic detail')).not.toBeChecked()
+  await clickArea(page, 'Sunnyvale')
+  const canvas = page.locator('.map-canvas')
+  await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  for (
+    let i = 0;
+    i < 6 && (i === 0 || Number(await canvas.getAttribute('data-camera-zoom')) < 12);
+    i++
+  ) {
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
+    await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  }
+  await expect(page.getByRole('button', { name: 'City view', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByLabel('Automatic geographic detail').check()
+  await expect(
+    page.getByRole('button', { name: 'Neighborhood view', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Back to city areas', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'City view', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  expect(Number(await canvas.getAttribute('data-camera-zoom'))).toBeLessThan(12)
+})
+
+test('keeps city areas when no neighborhood polygons are available', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('[data-place-id="city-8642"] .place-main').click()
+  const canvas = page.locator('.map-canvas')
+  await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  for (
+    let i = 0;
+    i < 6 && (i === 0 || Number(await canvas.getAttribute('data-camera-zoom')) < 12);
+    i++
+  ) {
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
+    await expect(canvas).toHaveAttribute('data-camera-moving', 'false')
+  }
+  await expect(page.getByRole('button', { name: 'City view', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(
+    page.getByText('No matched neighborhood boundaries for Hillsborough. Showing city areas.'),
+  ).toBeVisible()
+})

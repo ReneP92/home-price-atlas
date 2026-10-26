@@ -2,6 +2,18 @@ import booleanIntersects from '@turf/boolean-intersects'
 import type { Polygon } from 'geojson'
 import type { AreaBoundary, MapBounds } from '../types'
 
+export function boundaryContainsPoint(
+  boundary: AreaBoundary | undefined,
+  center: [number, number],
+): boolean {
+  if (!boundary) return false
+  const [west, south, east, north] = boundary.bbox
+  const lon = ((((center[0] + 180) % 360) + 360) % 360) - 180
+  const lat = center[1]
+  if (lon < west || lon > east || lat < south || lat > north) return false
+  return booleanIntersects(boundary.geometry, { type: 'Point', coordinates: [lon, lat] })
+}
+
 // Use the actual polygon, including holes, rather than a centroid or a rough
 // bounding-box match. Split viewports crossing the dateline into two boxes.
 export function boundaryInBounds(

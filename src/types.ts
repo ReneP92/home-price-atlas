@@ -13,6 +13,7 @@ export interface MapFocus {
   place: Place | null
   request: number
   bounds?: MapBounds
+  preserveView?: boolean
 }
 
 export interface Observation {

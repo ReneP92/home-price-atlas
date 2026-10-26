@@ -6,6 +6,7 @@ import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import {
   ArrowRight,
   Check,
+  ChevronLeft,
   Expand,
   LocateFixed,
   MapPin,
@@ -28,6 +29,12 @@ import type {
 import { compare, dateLabel, money, observation, percent } from '../lib/market'
 import { MAP_LAYERS, mapColor, mapValue, mapValueLabel } from '../lib/statistics'
 import { AREA_FILL, AREA_SOURCE, highlightAreas, syncAreaLayers } from '../lib/area-layers'
+import {
+  cityAtMapCenter,
+  hasNeighborhoodAreas,
+  NEIGHBORHOOD_ZOOM,
+  zoomDetailLevel,
+} from '../lib/zoom-detail'
 
 mapboxgl.workerUrl = mapboxWorkerUrl
 
@@ -42,6 +49,10 @@ interface Props {
   dataset: Dataset
   places: Place[]
   level: AreaLevel
+  autoDetail: boolean
+  cityId: string
+  cityName?: string
+  viewportBounds: MapBounds | null
   type: PropertyType
   metric: Metric
   horizon: Horizon
@@ -57,6 +68,8 @@ interface Props {
   onSelect: (place: Place) => void
   onHover: (id: string | null) => void
   onDrill: (city: Place) => void
+  onZoomLevel: (level: AreaLevel, city?: Place) => void
+  onBack: () => void
   onViewport: (bounds: MapBounds) => void
   onViewportOnly: (value: boolean) => void
   onLayer: (layer: MapLayer) => void
@@ -80,10 +93,13 @@ export default function InteractiveMap(p: Props) {
     'network' | 'authorization' | 'rate-limit' | null
   >(null)
   const [dismissed, setDismissed] = useState<string | null>(null)
+  const [detailNotice, setDetailNotice] = useState('')
+  const detailAction = useRef<(() => void) | null>(null)
+  const previousAutoDetail = useRef(p.autoDetail)
   const callbacks = useRef(p)
   const initialCamera = useRef({
-    bounds: p.focus.bounds || p.dataset.bounds,
-    padding: p.focus.bounds ? 0 : 55,
+    bounds: p.focus.bounds || p.viewportBounds || p.dataset.bounds,
+    padding: p.focus.bounds || p.viewportBounds ? 0 : 55,
   })
   useEffect(() => {
     callbacks.current = p
@@ -265,6 +281,7 @@ export default function InteractiveMap(p: Props) {
           container.current.dataset.cameraMoving = 'false'
           container.current.dataset.cameraBounds = JSON.stringify(visibleBounds)
           container.current.dataset.cameraPadding = JSON.stringify(map.getPadding())
+          container.current.dataset.cameraZoom = String(map.getZoom())
         }
         callbacks.current.onViewport(visibleBounds)
       }
@@ -273,11 +290,56 @@ export default function InteractiveMap(p: Props) {
       })
       map.on('moveend', viewport)
       viewport()
+      const evaluateDetail = () => {
+        const current = callbacks.current
+        if (!current.autoDetail) return
+        const zoom = map.getZoom()
+        if (current.level === 'neighborhood') {
+          if (zoomDetailLevel(current.level, zoom, true) === 'city') {
+            setDetailNotice('')
+            setDismissed(null)
+            current.onZoomLevel(
+              'city',
+              current.dataset.regions.find(
+                (place) => place.kind === 'city' && place.cityId === current.cityId,
+              ),
+            )
+          }
+          return
+        }
+        const center = map.getCenter()
+        const target = cityAtMapCenter(
+          current.dataset,
+          current.places.filter((place) => place.kind === 'city'),
+          [center.lng, center.lat],
+          current.selected?.cityId,
+        )
+        const canDrill = !!target && hasNeighborhoodAreas(current.dataset, target.cityId)
+        setDetailNotice(
+          zoom >= NEIGHBORHOOD_ZOOM && target && !canDrill
+            ? `No matched neighborhood boundaries for ${target.name}. Showing city areas.`
+            : '',
+        )
+        if (target && zoomDetailLevel(current.level, zoom, canDrill) === 'neighborhood') {
+          setDismissed(null)
+          current.onZoomLevel('neighborhood', target)
+        }
+      }
+      detailAction.current = evaluateDetail
+      let userZoom = false
+      map.on('zoomstart', (event) => {
+        userZoom = !('atlasNavigation' in event && event.atlasNavigation)
+      })
+      map.on('zoomend', (event) => {
+        if (userZoom && !('atlasNavigation' in event && event.atlasNavigation)) evaluateDetail()
+        userZoom = false
+      })
       const resize = new ResizeObserver(() => map.resize())
       resize.observe(container.current)
       return () => {
         resize.disconnect()
         layerActions.current = null
+        detailAction.current = null
         map.remove()
         mapRef.current = null
       }
@@ -285,6 +347,12 @@ export default function InteractiveMap(p: Props) {
       queueMicrotask(() => setUnavailable(true))
     }
   }, [p.dataset])
+
+  useEffect(() => {
+    const changed = previousAutoDetail.current !== p.autoDetail
+    previousAutoDetail.current = p.autoDetail
+    if (changed && p.autoDetail) detailAction.current?.()
+  }, [p.autoDetail])
 
   useEffect(() => {
     const map = mapRef.current
@@ -330,6 +398,7 @@ export default function InteractiveMap(p: Props) {
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
+    if (p.focus.preserveView) return
     if (p.focus.bounds) {
       const [west, south, east, north] = p.focus.bounds
       map.fitBounds(
@@ -338,6 +407,7 @@ export default function InteractiveMap(p: Props) {
           [east, north],
         ],
         { padding: 0, duration: 0 },
+        { atlasNavigation: true },
       )
       return
     }
@@ -362,17 +432,21 @@ export default function InteractiveMap(p: Props) {
               ? { top: 95, right: 20, bottom: 100, left: 20 }
               : { top: 65, right: 250, bottom: 50, left: 30 },
         },
+        { atlasNavigation: true },
       )
     } else if (center)
-      map.flyTo({
-        center,
-        zoom: place?.kind === 'city' || !place?.center ? 11.8 : 13,
-        duration: 650,
-        padding:
-          map.getContainer().clientWidth < 600
-            ? { top: 90, right: 175, bottom: 65, left: 0 }
-            : { top: 65, right: 230, bottom: 45, left: 0 },
-      })
+      map.flyTo(
+        {
+          center,
+          zoom: place?.kind === 'city' || !place?.center ? 11.8 : 13,
+          duration: 650,
+          padding:
+            map.getContainer().clientWidth < 600
+              ? { top: 90, right: 175, bottom: 65, left: 0 }
+              : { top: 65, right: 230, bottom: 45, left: 0 },
+        },
+        { atlasNavigation: true },
+      )
     else
       map.fitBounds(
         [
@@ -380,6 +454,7 @@ export default function InteractiveMap(p: Props) {
           [p.dataset.bounds[2], p.dataset.bounds[3]],
         ],
         { padding: 55, duration: 650 },
+        { atlasNavigation: true },
       )
   }, [p.focus, p.dataset, ready, boundaryById])
 
@@ -425,7 +500,18 @@ export default function InteractiveMap(p: Props) {
       <div ref={container} className="map-canvas" aria-label="Interactive home-price area map" />
       <div className="map-heading">
         <MapPin size={14} />
-        {p.level === 'city' ? 'City areas' : 'Reference neighborhood areas'}
+        {p.level === 'city' ? (
+          'City areas'
+        ) : (
+          <>
+            <button className="map-back" aria-label="Back to city areas" onClick={p.onBack}>
+              <ChevronLeft size={12} />
+              Cities
+            </button>
+            <span className="map-breadcrumb-separator">/</span>
+            {p.cityName || 'Neighborhood areas'}
+          </>
+        )}
         <span className="map-heading-dot" />
         {dateLabel(p.date)}
       </div>
@@ -495,7 +581,7 @@ export default function InteractiveMap(p: Props) {
           <span>Every area is still available in the list and charts.</span>
         </div>
       )}
-      {basemapError && !unavailable && ACCESS_TOKEN && (
+      {(basemapError || (p.autoDetail && detailNotice)) && !unavailable && ACCESS_TOKEN && (
         <div className="basemap-notice" role="status">
           {basemapError === 'rate-limit'
             ? basemap === 'satellite'
@@ -503,7 +589,9 @@ export default function InteractiveMap(p: Props) {
               : 'Mapbox is rate-limiting map requests. Area data is still available.'
             : basemapError === 'authorization'
               ? 'Mapbox rejected the token. Check your .env token and its allowed URLs.'
-              : 'Background map unavailable. Price areas still work.'}
+              : basemapError === 'network'
+                ? 'Background map unavailable. Price areas still work.'
+                : detailNotice}
         </div>
       )}
       {!located.length && !unavailable && ACCESS_TOKEN && (

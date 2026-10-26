@@ -14,6 +14,7 @@ A city and neighborhood home-price explorer, starting with California's Peninsul
 - See coverage, rising/flat/falling market breadth, and the middle 50% of area price changes. Filter by sample quality or direction; choose 5, 10, or 20 sales per comparison window.
 - Scrub or play the reporting timeline. Dates, thresholds, metrics, geographic scope, comparisons, and map-view filters are shareable in the URL.
 - Switch map coloring between price changes, price levels, sales activity, and days on market. Hover or click shaded areas, link selection to the directory, filter to the viewport, fit filtered boundaries, and expand the map.
+- Zoom into a city to reveal matched neighborhood polygons automatically; zoom out to return to cities. Manual geographic-level choices can be locked with **Follow map zoom** turned off.
 - Save areas on your device and export the underlying observations and statistics as CSV.
 - Run locally with free housing data and a configurable Mapbox basemap.
 
@@ -121,6 +122,8 @@ See [Redfin's methodology](https://www.redfin.com/news/data-center/methodology/)
 ### Map areas and boundary sources
 
 The map uses **filled polygons with outlines**, rather than dots. The map and directory use the same selected geographic level and filters. Select a shaded city and choose **Neighborhoods** to drill down, or use the geographic-level switch directly. Hover previews an area's statistics; clicking locks the detail card to that area. Directory selection fits the map to the matching boundary.
+
+**Follow map zoom** is enabled by default. User zoom gestures and the + / - controls switch to the city at the map center's matched neighborhoods at zoom 12, and back to city areas at zoom 10.75. The gap between thresholds prevents flicker. Switching layers preserves the camera position, property type, reporting date, sample threshold, and map metric. Cities without matched neighborhood boundaries stay at city level with an explanatory message. Selecting a record programmatically fits its area without unexpectedly changing the geographic level. The map breadcrumb returns to the city overview; choosing Cities or Neighborhoods manually pauses automatic detail until the checkbox is enabled again.
 
 **City boundaries** come from the latest BAS municipal/CDP layers in [US Census TIGERweb](https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer). The generator matches a unique normalized city name within the configured state FIPS code and geographic extent. The initial boundary snapshot uses BAS 2026 and covers all 22 configured cities. Some municipal boundaries include water or uninhabited land.
 
