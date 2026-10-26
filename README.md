@@ -38,6 +38,29 @@ bun run test:e2e
 bun run build
 ```
 
+### Command shortcuts
+
+With [just](https://just.systems/) installed, run `just` to list the available recipes:
+
+```sh
+just setup          # Install dependencies and Chromium
+just dev            # Start the local development server
+just preview        # Build and serve a fresh local production preview
+just check          # Run formatting, lint, tests, data validation, and build
+just data-refresh   # Refresh the default region's public data
+```
+
+Commands accept extra arguments where useful:
+
+```sh
+just dev --port 5174
+just e2e --project desktop
+just test -t "annual"
+just data-refresh peninsula-south-bay --since 2024-09-01
+```
+
+Individual recipes also include `install`, `browsers`, `build`, `lint`, `format`, `format-check`, `test`, `data-test`, and `data-validate`.
+
 ## Data and methodology
 
 ### How much sales information is available?
