@@ -65,3 +65,7 @@ check: format-check lint test data-test data-validate e2e build
 # Refresh city and reference-neighborhood polygons without downloading prices.
 data-boundaries region="peninsula-south-bay":
     bun run data:boundaries --region "$@"
+
+# Audit local sold-home CSVs and calculate neighborhood export-sample statistics.
+data-sales *args:
+    bun run data:sales "$@"

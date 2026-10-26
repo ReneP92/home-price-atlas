@@ -177,6 +177,35 @@ Local files must contain the same dimension and metric columns as the public pro
 
 Outputs in `public/data/` are generated. Regenerate them with the importer rather than editing them manually. A monthly GitHub Actions workflow imports and validates a new snapshot, commits it, and runs the repository checks. It can also be triggered manually from the Actions tab. Pull the latest changes to use the updated snapshot locally.
 
+### Transaction-level neighborhood pilot
+
+The local sold-home importer tests whether individual records can support larger neighborhood samples. It reads Redfin property-search CSV exports, assigns sales to the existing city and reference-neighborhood polygons, and calculates pooled **3-, 6-, and 12-month sale-price medians** with matching windows one year earlier. These are separate sample-window sizes, unlike the dashboard's comparison-horizon control.
+
+1. In Redfin, search sold homes in a city and download the table using **Download All**, where available. For a 12-month window compared with the prior year, request at least two full years of history. Keep each original CSV under `.cache/sales-pilot/raw/`.
+2. Include all three property types, either in one file or separate exports. The importer uses each row's property classification, rather than assuming that the search filter was enforced. Overlapping files are deduplicated.
+3. Run the local audit:
+
+```sh
+just data-sales .cache/sales-pilot/raw/*.csv --city Sunnyvale --as-of 2026-09-30
+# Or: bun run data:sales /path/to/sold-homes.csv --city Sunnyvale
+```
+
+The default reporting date is the end of the last completed month. `--minimum-sales` defaults to 5 in **each** comparison window; median price per square foot has its own count of valid sizes. `--boundaries` selects another generated regional boundary file. City scope is determined by the city polygon, with mismatched postal-city labels reported separately.
+
+The terminal shows input exclusions, geographic matches, and the number of neighborhoods meeting the sample minimum at each window size. The default output, `.cache/sales-pilot/sunnyvale.json`, contains normalized sales, input SHA-256 checksums, row-level provenance, boundary sources, conflicting duplicate groups, and sample statistics. `.cache/` is Git-ignored; downloaded property records and pilot outputs are local. `--output` can select another output file. Optional `<export-name>.metadata.json` sidecars preserve retrieval URLs/dates and must contain the matching `sha256`.
+
+Important interpretation details:
+
+- Redfin documents a **350-home export cap**, restrictions on small-result downloads, and MLS-specific exclusions. The importer flags capped files **before** filtering. Smaller files still do not establish completeness. See [Redfin's download documentation](https://support.redfin.com/hc/en-us/articles/360016476931-Downloading-Data).
+- A sold-home search is not necessarily a transaction ledger: a home that sold twice may appear only once. Requesting several years does not establish complete historical coverage.
+- Only dated, confirmed sold records with positive prices and valid coordinates enter the spatial analysis. Nearby-city records, listings, undated sales, and records after the reporting cutoff are excluded and counted.
+- Identity matching uses Redfin home IDs and normalized full addresses including units, together with the sale date. Different sale dates are preserved. Conflicting prices, types, sizes, or locations quarantine the whole duplicate group instead of picking an arbitrary record.
+- Points on polygon edges or in overlapping neighborhoods remain unassigned at neighborhood level. City statistics are computed directly from the city sample, never by summing neighborhood samples.
+- Medians are calculated from individual sale prices and individual price-per-square-foot ratios. Missing sizes do not remove a valid price observation. Below-threshold medians and changes are null. A zero sample count does not mean zero market sales.
+- These outputs are explicitly **unverified export-sample statistics**, not validated neighborhood market trends. They are not loaded into the dashboard. Sale prices and source property classifications do not independently establish arm's-length transactions or same-home appreciation.
+
+The October 26, 2026 Sunnyvale pilot retrieved three capped exports totaling 1,050 rows. Through September 30, it retained 827 city sales, of which 810 matched one of nine reference neighborhoods. At five sales in each year-over-year window, increasing the sample window from 3 to 12 months increased qualifying sample comparisons from 0 to 7 for single-family homes, 2 to 4 for condos, and 0 to 5 for townhouses. This demonstrates the importer and larger-window approach, **not complete market coverage**. A complete historical feed or county sales file is the next data-quality requirement before incorporating these statistics into the dashboard.
+
 ## Adding another US region
 
 Geography is configured in `config/regions.json`, not embedded in UI or calculation code.
@@ -194,6 +223,7 @@ The initial configuration covers 22 cities. Additional US regions become availab
 config/regions.json       Geographic scope and stable provider IDs
 scripts/refresh.py       Streaming import, validation, reference-location matching
 scripts/boundaries.py    Census and Zillow reference polygon matching and validation
+scripts/sales.py         Local transaction import, spatial assignment, and sample audit
 public/data/             Small generated regional snapshots and catalog
 src/lib/market.ts        Period matching, sample rules, changes, and formatting
 src/lib/statistics.ts    Annual sales, benchmarks, coverage, geographic filtering, exports
